@@ -1,23 +1,37 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const fsPromise = require('node:fs/promises');
-const filesDir = path.resolve(__dirname, 'files');
-const filesCopyDir = path.resolve(__dirname, 'files-copy');
+const path = require('path');
+const fsPromise = require('fs/promises');
 
-fs.mkdir(filesCopyDir, { recursive: true }, (ee) => {
-});
 
-fs.readdir(filesCopyDir, { withFileTypes: true }, (_, files) => {
+const filesDir = path.join(__dirname, 'files');
+const filesCopyDir = path.join(__dirname, 'files-copy');
+
+
+
+async function clear(folder) {
+    let files = await fsPromise.readdir(folder);
     for (let file of files) {
-        fsPromise.unlink(`${filesCopyDir}/${file.name}`, (err) => {
-            if (err) console.log(err);
-            else console.log('Файл удален')
-        })
-    }
-})
+        let stat = await fsPromise.stat(path.join(filesCopyDir, file));
+        if (stat.isFile()) {
+            await fsPromise.unlink(path.join(filesCopyDir, file));
+        } else {
+            await clear(path.join(filesCopyDir, file));
+            await fsPromise.rmdir(path.join(filesCopyDir, file))
+        }
 
-fs.readdir(filesDir, { withFileTypes: true }, (_, files) => {
-    for (const file of files) {
-        fsPromise.copyFile(`${filesDir}/${file.name}`, `${filesCopyDir}/${file.name}`)
     }
-});
+}
+
+async function finishHIM() {
+    await fsPromise.mkdir(filesCopyDir, { recursive: true });
+    await clear(filesCopyDir);
+
+    let files = await fsPromise.readdir(filesDir);
+    for (const file of files) {
+        console.log('Путь: ', path.join(filesDir, file));
+        await fsPromise.copyFile(path.join(filesDir, file), path.join(filesCopyDir, file))
+
+    }
+
+}
+
+finishHIM()

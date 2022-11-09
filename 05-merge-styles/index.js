@@ -3,8 +3,11 @@ const path = require('node:path');
 
 const target = path.resolve(__dirname, 'project-dist');
 
-fs.writeFile(target, 'bundle.css', (err) => {
-    if (err) console.error(err);
+fs.unlink(`${target}/bundle.css`, () => {
+  fs.open(`${target}/bundle.css`, 'w', (err) => {
+    if(err) throw err;
+    console.log('File created');
+  });
 });
 
 fs.readdir(path.resolve(__dirname, 'styles'), { withFileTypes: true }, (_, files) => {
